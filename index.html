@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070b16">
+  <meta name="description" content="edgekanbann — seu trabalho, em um quadro claro e organizado.">
+  <title>edgekanbann</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section class="login-screen" id="loginScreen" aria-labelledby="loginTitle">
+    <div class="login-card">
+      <a class="brand" href="index.html" aria-label="edgekanbann">
+        <span class="brand-mark" aria-hidden="true">e</span>
+        <span>edgekanbann</span>
+      </a>
+      <h1 id="loginTitle">Seu espaço de trabalho.</h1>
+      <p class="login-intro" id="authDescription">Entre para acessar seu quadro.</p>
+      <form class="login-form" id="loginForm">
+        <label for="emailInput">E-mail
+          <input type="email" id="emailInput" autocomplete="username" required placeholder="voce@exemplo.com">
+        </label>
+        <div class="field">
+          <label for="passwordInput">Senha</label>
+          <input type="password" id="passwordInput" autocomplete="current-password" minlength="8" required placeholder="Pelo menos 8 caracteres">
+        </div>
+        <p class="login-message" id="loginMessage" role="status" aria-live="polite" hidden></p>
+        <button class="btn-primary login-submit" id="authSubmit" type="submit">Entrar</button>
+      </form>
+      <div class="login-links">
+        <button class="text-button" id="authModeToggle" type="button">Criar uma conta</button>
+        <button class="text-button" id="resetPassword" type="button">Esqueci minha senha</button>
+      </div>
+      <p class="login-footnote">Suas tarefas ficam salvas com segurança na sua conta.</p>
+    </div>
+  </section>
+
+  <header id="appHeader" hidden>
+    <div class="header-brand">
+      <a class="brand" href="index.html" aria-label="edgekanbann">
+        <span class="brand-mark" aria-hidden="true">e</span>
+        <span>edgekanbann</span>
+      </a>
+      <p>Seu trabalho, sem ruído.</p>
+    </div>
+    <div class="account-actions">
+      <span class="account-email" id="accountEmail"></span>
+      <button class="btn-logout" id="logoutBtn" type="button">Sair</button>
+      <button class="btn-chat" id="openChat" type="button" aria-controls="projectChat" aria-expanded="false">
+        Pergunte ao seu projeto
+      </button>
+      <button class="btn-add" id="openModal" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Nova tarefa
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace" id="workspace" hidden>
+    <div class="board-heading">
+      <div>
+        <p class="eyebrow">MEU QUADRO</p>
+        <h1>Um passo de cada vez.</h1>
+      </div>
+      <p class="sync-status" id="syncStatus" role="status" aria-live="polite">Conectando ao quadro…</p>
+    </div>
+    <div class="board" id="board">
+      <section class="column" data-status="todo" aria-labelledby="h-todo">
+        <div class="column-head"><h2 id="h-todo">A fazer</h2><span class="count" data-count="todo">0</span></div>
+        <div class="cards" data-list="todo"></div>
+      </section>
+      <section class="column" data-status="doing" aria-labelledby="h-doing">
+        <div class="column-head"><h2 id="h-doing">Em andamento</h2><span class="count" data-count="doing">0</span></div>
+        <div class="cards" data-list="doing"></div>
+      </section>
+      <section class="column" data-status="done" aria-labelledby="h-done">
+        <div class="column-head"><h2 id="h-done">Concluído</h2><span class="count" data-count="done">0</span></div>
+        <div class="cards" data-list="done"></div>
+      </section>
+    </div>
+  </main>
+
+  <aside class="chat-panel" id="projectChat" aria-labelledby="chatTitle" hidden>
+    <div class="chat-header">
+      <div>
+        <p class="eyebrow">EDGEKANBANN AI</p>
+        <h2 id="chatTitle">Pergunte ao seu projeto</h2>
+      </div>
+      <button class="chat-close" id="closeChat" type="button" aria-label="Fechar chat">×</button>
+    </div>
+    <div class="chat-messages" id="chatMessages" role="log" aria-live="polite" aria-relevant="additions">
+      <p class="chat-welcome">Pergunte sobre suas tarefas, o que está atrasado ou o que falta fazer.</p>
+    </div>
+    <form class="chat-form" id="chatForm">
+      <label class="sr-only" for="chatInput">Sua pergunta sobre o projeto</label>
+      <textarea id="chatInput" rows="2" maxlength="1000" required placeholder="Ex.: O que está travado?"></textarea>
+      <button class="btn-primary" id="chatSubmit" type="submit">Enviar</button>
+    </form>
+  </aside>
+
+  <dialog id="modal" aria-labelledby="modalTitle">
+    <form class="modal-body" id="taskForm">
+      <div>
+        <p class="eyebrow">NOVA IDEIA</p>
+        <h2 id="modalTitle">Criar tarefa</h2>
+      </div>
+      <label for="titleInput">Título
+        <input type="text" id="titleInput" maxlength="80" required placeholder="O que precisa ser feito?">
+      </label>
+      <label for="descInput">Descrição <span class="optional">(opcional)</span>
+        <textarea id="descInput" maxlength="400" placeholder="Adicione um pouco de contexto"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="cancelBtn">Cancelar</button>
+        <button type="submit" class="btn-primary">Adicionar tarefa</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
