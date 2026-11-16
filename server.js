@@ -383,7 +383,7 @@ app.post('/api/auth/register', asyncRoute(async (request, response) => {
       user.id, email, hashPassword(password), new Date().toISOString()
     ]);
   } catch (error) {
-    if (error.code === '23505' || String(error.code).startsWith('SQLITE_CONSTRAINT')) {
+    if (error.code === '23505' || error.message === 'UNIQUE constraint failed: users.email') {
       throw httpError(409, 'Este e-mail já possui uma conta. Entre com sua senha.');
     }
     throw error;

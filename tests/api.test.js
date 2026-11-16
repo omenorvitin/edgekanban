@@ -79,6 +79,13 @@ after(async () => {
 
 test('collaboration, server-side roles, task details, Scrum and WIP limits', async () => {
   const owner = await register('owner@example.com');
+  const duplicateOwner = await request('/api/auth/register', '', 'POST', {
+    email: 'owner@example.com',
+    password: 'secure-pass-123'
+  });
+  assert.equal(duplicateOwner.status, 409);
+  assert.equal(duplicateOwner.body.error, 'Este e-mail já possui uma conta. Entre com sua senha.');
+
   const boardsResult = await request('/api/boards', owner.token);
   const boardId = boardsResult.body.boards[0].id;
   const aiStatus = await request('/api/ai/status', owner.token);
