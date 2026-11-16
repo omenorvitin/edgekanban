@@ -4,19 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#070b16">
-  <meta name="description" content="edgekanbann — seu trabalho, em um quadro claro e organizado.">
+  <meta name="description" content="edgekanbann — quadros colaborativos para organizar seu trabalho.">
   <title>edgekanbann</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <section class="login-screen" id="loginScreen" aria-labelledby="loginTitle">
     <div class="login-card">
-      <a class="brand" href="index.html" aria-label="edgekanbann">
+      <a class="brand" href="/" aria-label="edgekanbann">
         <span class="brand-mark" aria-hidden="true">e</span>
         <span>edgekanbann</span>
       </a>
       <h1 id="loginTitle">Seu espaço de trabalho.</h1>
-      <p class="login-intro" id="authDescription">Entre para acessar seu quadro.</p>
+      <p class="login-intro" id="authDescription">Entre para acessar seus quadros.</p>
       <form class="login-form" id="loginForm">
         <label for="emailInput">E-mail
           <input type="email" id="emailInput" autocomplete="username" required placeholder="voce@exemplo.com">
@@ -30,15 +30,14 @@
       </form>
       <div class="login-links">
         <button class="text-button" id="authModeToggle" type="button">Criar uma conta</button>
-        <button class="text-button" id="resetPassword" type="button">Esqueci minha senha</button>
       </div>
-      <p class="login-footnote">Suas tarefas ficam salvas com segurança na sua conta.</p>
+      <p class="login-footnote">Crie uma conta ou entre para colaborar nos quadros.</p>
     </div>
   </section>
 
   <header id="appHeader" hidden>
     <div class="header-brand">
-      <a class="brand" href="index.html" aria-label="edgekanbann">
+      <a class="brand" href="/" aria-label="edgekanbann">
         <span class="brand-mark" aria-hidden="true">e</span>
         <span>edgekanbann</span>
       </a>
@@ -47,50 +46,147 @@
     <div class="account-actions">
       <span class="account-email" id="accountEmail"></span>
       <button class="btn-logout" id="logoutBtn" type="button">Sair</button>
-      <button class="btn-chat" id="openChat" type="button" aria-controls="projectChat" aria-expanded="false">
-        Pergunte ao seu projeto
-      </button>
-      <button class="btn-add" id="openModal" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-        Nova tarefa
-      </button>
     </div>
   </header>
 
   <main class="workspace" id="workspace" hidden>
-    <div class="board-heading">
-      <div>
-        <p class="eyebrow">MEU QUADRO</p>
-        <h1>Um passo de cada vez.</h1>
-      </div>
-      <p class="sync-status" id="syncStatus" role="status" aria-live="polite">Conectando ao quadro…</p>
-    </div>
-    <div class="board" id="board">
-      <section class="column" data-status="todo" aria-labelledby="h-todo">
-        <div class="column-head"><h2 id="h-todo">A fazer</h2><span class="count" data-count="todo">0</span></div>
-        <div class="cards" data-list="todo"></div>
-      </section>
-      <section class="column" data-status="doing" aria-labelledby="h-doing">
-        <div class="column-head"><h2 id="h-doing">Em andamento</h2><span class="count" data-count="doing">0</span></div>
-        <div class="cards" data-list="doing"></div>
-      </section>
-      <section class="column" data-status="done" aria-labelledby="h-done">
-        <div class="column-head"><h2 id="h-done">Concluído</h2><span class="count" data-count="done">0</span></div>
-        <div class="cards" data-list="done"></div>
+    <div class="workspace-layout">
+      <aside class="board-sidebar" aria-label="Seus quadros">
+        <div class="sidebar-heading">
+          <span>Quadros</span>
+          <button class="icon-button" id="createBoard" type="button" aria-label="Criar quadro">+</button>
+        </div>
+        <h2>Meus quadros</h2>
+        <nav class="board-list" id="myBoards"></nav>
+        <h2>Compartilhados comigo</h2>
+        <nav class="board-list" id="sharedBoards"></nav>
+      </aside>
+
+      <section class="board-content">
+        <div class="board-heading">
+          <div>
+            <p class="eyebrow" id="boardRole">MEU QUADRO</p>
+            <h1 id="boardTitle">Carregando quadro…</h1>
+          </div>
+          <div class="board-actions">
+            <span class="sync-status" id="syncStatus" role="status" aria-live="polite"></span>
+            <button class="btn-ghost" id="openColumns" type="button">Colunas e WIP</button>
+            <button class="btn-ghost" id="openShare" type="button">Compartilhar</button>
+            <button class="btn-chat" id="openChat" type="button" aria-controls="projectChat" aria-expanded="false">Pergunte ao seu projeto</button>
+            <button class="btn-add" id="openModal" type="button">
+              <span aria-hidden="true">+</span> Nova tarefa
+            </button>
+          </div>
+        </div>
+
+        <div class="view-tabs" role="tablist" aria-label="Visualizações do quadro">
+          <button class="view-tab is-active" data-view="kanban" type="button" role="tab" aria-selected="true">Kanban</button>
+          <button class="view-tab" data-view="scrum" type="button" role="tab" aria-selected="false">Backlog e sprints</button>
+          <button class="view-tab" data-view="activity" type="button" role="tab" aria-selected="false">Atividade</button>
+        </div>
+
+        <section id="kanbanView" class="view-panel" aria-label="Quadro Kanban">
+          <div class="board" id="board"></div>
+        </section>
+
+        <section id="scrumView" class="view-panel" aria-label="Backlog e sprints" hidden>
+          <div class="scrum-heading">
+            <div>
+              <p class="eyebrow">SCRUM</p>
+              <h2>Sprints</h2>
+            </div>
+            <button class="btn-add" id="createSprint" type="button">+ Novo sprint</button>
+          </div>
+          <div class="sprint-list" id="sprintList"></div>
+          <section class="backlog">
+            <div class="scrum-heading">
+              <div><p class="eyebrow">SEM SPRINT</p><h2>Backlog</h2></div>
+              <span class="count" id="backlogCount">0</span>
+            </div>
+            <div class="backlog-list" id="backlogList"></div>
+          </section>
+        </section>
+
+        <section id="activityView" class="view-panel" aria-label="Histórico de atividades" hidden>
+          <h2>Histórico de atividades</h2>
+          <ol class="activity-list" id="activityList"></ol>
+        </section>
       </section>
     </div>
   </main>
 
+  <main class="task-page" id="taskPage" hidden>
+    <div class="task-page-header">
+      <a class="btn-ghost" id="taskBackLink" href="/">← Voltar ao quadro</a>
+      <span class="sync-status" id="taskSyncStatus" role="status" aria-live="polite"></span>
+    </div>
+    <section class="task-detail">
+      <div class="task-detail-main">
+        <p class="eyebrow" id="taskBoardName">TAREFA</p>
+        <label for="detailTitle">Título</label>
+        <input id="detailTitle" maxlength="120">
+        <label for="detailDescription">Descrição</label>
+        <textarea id="detailDescription" maxlength="2000"></textarea>
+        <div class="detail-fields">
+          <label for="detailStatus">Coluna<select id="detailStatus"></select></label>
+          <label for="detailPriority">Prioridade
+            <select id="detailPriority">
+              <option value="low">Baixa</option>
+              <option value="medium">Média</option>
+              <option value="high">Alta</option>
+            </select>
+          </label>
+          <label for="detailDueDate">Prazo<input id="detailDueDate" type="date"></label>
+          <label for="detailAssignee">Responsável<select id="detailAssignee"></select></label>
+          <label for="detailStoryPoints">Story points<input id="detailStoryPoints" type="number" min="0" max="1000" step="0.5"></label>
+          <label for="detailSprint">Sprint<select id="detailSprint"></select></label>
+        </div>
+        <fieldset class="label-field">
+          <legend>Labels</legend>
+          <div class="label-options" id="detailLabels"></div>
+        </fieldset>
+        <label for="detailAcceptance">Critérios de aceite<textarea id="detailAcceptance" maxlength="2000"></textarea></label>
+        <label for="detailDod">Definition of Done<textarea id="detailDod" maxlength="2000"></textarea></label>
+        <p class="sync-status" id="detailSaveStatus" role="status" aria-live="polite"></p>
+      </div>
+
+      <aside class="task-detail-side">
+        <section class="detail-section">
+          <div class="section-title">
+            <div><p class="eyebrow">CHECKLIST</p><h2>Subtarefas</h2></div>
+            <button class="btn-ghost" id="generateChecklist" type="button">Gerar com IA</button>
+          </div>
+          <form class="inline-form" id="checklistForm">
+            <label class="sr-only" for="checklistInput">Nova subtarefa</label>
+            <input id="checklistInput" maxlength="240" required placeholder="Adicionar subtarefa">
+            <button class="btn-primary" type="submit">Adicionar</button>
+          </form>
+          <ul class="checklist" id="checklist"></ul>
+        </section>
+        <section class="detail-section">
+          <p class="eyebrow">CONVERSA</p><h2>Comentários</h2>
+          <form class="comment-form" id="commentForm">
+            <label class="sr-only" for="commentInput">Escreva um comentário</label>
+            <textarea id="commentInput" maxlength="2000" required placeholder="Escreva um comentário…"></textarea>
+            <button class="btn-primary" type="submit">Comentar</button>
+          </form>
+          <ol class="comment-list" id="commentList"></ol>
+        </section>
+        <details class="detail-section">
+          <summary><span class="eyebrow">HISTÓRICO</span><h2>Atividade da tarefa</h2></summary>
+          <ol class="activity-list" id="taskActivity"></ol>
+        </details>
+      </aside>
+    </section>
+  </main>
+
   <aside class="chat-panel" id="projectChat" aria-labelledby="chatTitle" hidden>
     <div class="chat-header">
-      <div>
-        <p class="eyebrow">EDGEKANBANN AI</p>
-        <h2 id="chatTitle">Pergunte ao seu projeto</h2>
-      </div>
+      <div><p class="eyebrow">EDGEKANBANN AI</p><h2 id="chatTitle">Pergunte ao seu projeto</h2></div>
       <button class="chat-close" id="closeChat" type="button" aria-label="Fechar chat">×</button>
     </div>
     <div class="chat-messages" id="chatMessages" role="log" aria-live="polite" aria-relevant="additions">
-      <p class="chat-welcome">Pergunte sobre suas tarefas, o que está atrasado ou o que falta fazer.</p>
+      <p class="chat-welcome">Pergunte sobre tarefas atrasadas, o que falta lançar ou quem tem mais tarefas.</p>
     </div>
     <form class="chat-form" id="chatForm">
       <label class="sr-only" for="chatInput">Sua pergunta sobre o projeto</label>
@@ -101,16 +197,17 @@
 
   <dialog id="modal" aria-labelledby="modalTitle">
     <form class="modal-body" id="taskForm">
-      <div>
-        <p class="eyebrow">NOVA IDEIA</p>
-        <h2 id="modalTitle">Criar tarefa</h2>
+      <div><p class="eyebrow">NOVA IDEIA</p><h2 id="modalTitle">Criar tarefa</h2></div>
+      <label for="titleInput">Título<input type="text" id="titleInput" maxlength="120" required placeholder="O que precisa ser feito?"></label>
+      <label for="descInput">Descrição <span class="optional">(opcional)</span><textarea id="descInput" maxlength="2000" placeholder="Adicione um pouco de contexto"></textarea></label>
+      <div class="detail-fields">
+        <label for="newPriority">Prioridade
+          <select id="newPriority"><option value="low">Baixa</option><option value="medium" selected>Média</option><option value="high">Alta</option></select>
+        </label>
+        <label for="newDueDate">Prazo<input id="newDueDate" type="date"></label>
+        <label for="newAssignee">Responsável<select id="newAssignee"></select></label>
       </div>
-      <label for="titleInput">Título
-        <input type="text" id="titleInput" maxlength="80" required placeholder="O que precisa ser feito?">
-      </label>
-      <label for="descInput">Descrição <span class="optional">(opcional)</span>
-        <textarea id="descInput" maxlength="400" placeholder="Adicione um pouco de contexto"></textarea>
-      </label>
+      <fieldset class="label-field"><legend>Labels</legend><div class="label-options" id="newLabels"></div></fieldset>
       <div class="modal-actions">
         <button type="button" class="btn-ghost" id="cancelBtn">Cancelar</button>
         <button type="submit" class="btn-primary">Adicionar tarefa</button>
@@ -118,6 +215,62 @@
     </form>
   </dialog>
 
-  <script type="module" src="script.js"></script>
+  <dialog id="shareDialog" aria-labelledby="shareTitle">
+    <form class="modal-body" id="inviteForm">
+      <div><p class="eyebrow">COLABORAÇÃO</p><h2 id="shareTitle">Compartilhar quadro</h2></div>
+      <label for="inviteEmail">E-mail do usuário<input id="inviteEmail" type="email" required placeholder="colega@exemplo.com"></label>
+      <label for="inviteRole">Permissão
+        <select id="inviteRole"><option value="EDITOR">Editor — pode editar</option><option value="VIEWER">Leitor — somente visualizar</option></select>
+      </label>
+      <button class="btn-primary" type="submit">Gerar convite</button>
+      <label for="inviteUrl">Link do convite <span class="optional">Copie e envie para a pessoa convidada</span><input id="inviteUrl" readonly placeholder="O link aparecerá aqui"></label>
+      <button class="btn-ghost" id="copyInvite" type="button" disabled>Copiar link</button>
+      <p class="form-message" id="inviteMessage" role="status"></p>
+      <div><h3>Membros do quadro</h3><ul class="member-list" id="memberList"></ul></div>
+      <div class="modal-actions"><button type="button" class="btn-ghost" data-close-dialog="shareDialog">Fechar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="columnsDialog" aria-labelledby="columnsTitle">
+    <form class="modal-body" id="columnsForm">
+      <div><p class="eyebrow">KANBAN</p><h2 id="columnsTitle">Colunas e limites WIP</h2></div>
+      <div class="column-settings" id="columnSettings"></div>
+      <button class="btn-ghost" id="addColumn" type="button">+ Adicionar coluna</button>
+      <p class="form-message" id="columnsMessage" role="status"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" data-close-dialog="columnsDialog">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar colunas</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="boardDialog" aria-labelledby="boardDialogTitle">
+    <form class="modal-body" id="boardForm">
+      <div><p class="eyebrow">NOVO ESPAÇO</p><h2 id="boardDialogTitle">Criar quadro</h2></div>
+      <label for="boardNameInput">Nome do quadro<input id="boardNameInput" maxlength="80" required placeholder="Ex.: Projeto da equipe"></label>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" data-close-dialog="boardDialog">Cancelar</button>
+        <button type="submit" class="btn-primary">Criar quadro</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="sprintDialog" aria-labelledby="sprintDialogTitle">
+    <form class="modal-body" id="sprintForm">
+      <div><p class="eyebrow">SCRUM</p><h2 id="sprintDialogTitle">Criar sprint</h2></div>
+      <label for="sprintName">Nome<input id="sprintName" maxlength="80" required placeholder="Ex.: Sprint 1"></label>
+      <div class="detail-fields">
+        <label for="sprintStart">Início<input id="sprintStart" type="date"></label>
+        <label for="sprintEnd">Fim<input id="sprintEnd" type="date"></label>
+      </div>
+      <label class="inline-check"><input id="sprintStartNow" type="checkbox"> Criar como sprint ativo</label>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" data-close-dialog="sprintDialog">Cancelar</button>
+        <button type="submit" class="btn-primary">Criar sprint</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/script.js"></script>
 </body>
 </html>
