@@ -8,7 +8,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
-const AI_MODEL = process.env.AI_MODEL || (AI_PROVIDER === 'openai' ? 'gpt-4o-mini' : 'gemini-2.5-flash');
+const AI_MODEL = AI_PROVIDER === 'openai' ? (process.env.AI_MODEL || 'gpt-4o-mini') : 'gemini-2.5-flash';
 const AI_API_KEY = process.env.AI_API_KEY?.trim() || '';
 const MAX_MESSAGES = 10;
 const DEFAULT_COLUMNS = [
@@ -993,7 +993,7 @@ async function askAI(messages, tasks, boardName) {
 }
 
 async function callGemini(instructions, messages, signal) {
-  const url = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(AI_MODEL)}:generateContent`);
+  const url = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent`);
   url.searchParams.set('key', AI_API_KEY);
   const result = await fetch(url, {
     method: 'POST',

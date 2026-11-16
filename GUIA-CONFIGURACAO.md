@@ -18,18 +18,17 @@ Para habilitar o chat e a criação de checklist por IA, configure a chave somen
 ```powershell
 $env:AI_PROVIDER = "gemini"
 $env:AI_API_KEY = "sua-chave"
-$env:AI_MODEL = "gemini-2.5-flash"
 npm start
 ```
 
-Também é possível usar `AI_PROVIDER=openai` e `AI_MODEL=gpt-4o-mini`. A interface nunca recebe a chave da IA. Sem uma chave válida, os recursos de IA informam que estão indisponíveis; quadros e tarefas continuam funcionando.
+O Gemini usa `gemini-2.5-flash`. Também é possível usar `AI_PROVIDER=openai` e, opcionalmente, `AI_MODEL=gpt-4o-mini`. A interface nunca recebe a chave da IA. Sem uma chave válida, os recursos de IA informam que estão indisponíveis; quadros e tarefas continuam funcionando.
 
 ## Publicar no Render
 
 1. Publique o repositório como um **Web Service** com `npm install` no build e `npm start` no start.
 2. Crie um banco **Render PostgreSQL** e configure `DATABASE_URL` no Web Service com a URL interna fornecida pelo Render.
 3. Configure `APP_URL` com a URL pública do app, por exemplo `https://edgekanbann-ai.onrender.com`.
-4. Para os recursos de IA, cadastre `AI_PROVIDER`, `AI_API_KEY` e, opcionalmente, `AI_MODEL` nas variáveis do serviço.
+4. Para os recursos de IA, cadastre `AI_PROVIDER` e `AI_API_KEY` nas variáveis do serviço. `AI_MODEL` é opcional somente para OpenAI; o Gemini usa `gemini-2.5-flash`.
 5. Faça um deploy e confira `https://seu-dominio/healthz`.
 
 O app usa SQLite se `DATABASE_URL` não estiver definido. O disco do Web Service pode ser temporário; para preservar os dados em produção, configure PostgreSQL no Render. O servidor cria as tabelas necessárias na inicialização.
