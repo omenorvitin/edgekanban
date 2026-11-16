@@ -13,6 +13,7 @@ const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
 const OPENAI_MODEL = process.env.AI_MODEL || 'gpt-4o-mini';
 const AI_API_KEY = process.env.AI_API_KEY?.trim() || '';
 const MAX_MESSAGES = 10;
+const MAX_GEMINI_MODELS_TO_TRY = 3;
 const getGeminiModels = createGeminiModelLoader(AI_API_KEY);
 const DEFAULT_COLUMNS = [
   { id: 'todo', name: 'A fazer' },
@@ -997,13 +998,12 @@ async function askAI(messages, tasks, boardName) {
 
 async function callGemini(instructions, messages, signal) {
   const models = await getGeminiModels();
-  const primaryModel = models[0];
-  const fallbackModel = models[1] || primaryModel;
-  const url = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(primaryModel)}:generateContent`);
-  url.searchParams.set('key', AI_API_KEY);
-  const fallbackUrl = new URL(url);
-  fallbackUrl.pathname = `/v1beta/models/${encodeURIComponent(fallbackModel)}:generateContent`;
-  const { response: result, requestUrl, fallbackUsed } = await fetchGeminiWithFallback(url, fallbackUrl, {
+  const modelUrls = models.slice(0, MAX_GEMINI_MODELS_TO_TRY).map(model => {
+    const url = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`);
+    url.searchParams.set('key', AI_API_KEY);
+    return url;
+  });
+  const { response: result, requestUrl, fallbackUsed } = await fetchGeminiWithFallback(modelUrls, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     signal,
@@ -1016,14 +1016,14 @@ async function callGemini(instructions, messages, signal) {
       generationConfig: { maxOutputTokens: 700, temperature: 0.3 }
     })
   });
+  const selectedModel = models[modelUrls.indexOf(requestUrl)];
   if (fallbackUsed) {
-    console.warn(`Gemini ${primaryModel} permaneceu sobrecarregado; usando ${fallbackModel}.`);
+    console.warn(`Modelos Gemini anteriores permaneceram sobrecarregados; usando ${selectedModel}.`);
   }
   if (!result.ok) {
     const errorBody = await result.text();
     const safeRequestUrl = `${requestUrl.origin}${requestUrl.pathname}?key=[redacted]`;
-    const model = fallbackUsed ? fallbackModel : primaryModel;
-    throw new Error(`Gemini respondeu com status ${result.status} em ${safeRequestUrl} (modelo ${model}): ${errorBody}`);
+    throw new Error(`Gemini respondeu com status ${result.status} em ${safeRequestUrl} (modelo ${selectedModel}): ${errorBody}`);
   }
   const data = await result.json();
   const answer = data.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('').trim();

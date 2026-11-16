@@ -39,16 +39,12 @@ export async function fetchGeminiWithRetry(url, options, fetchImpl = fetch) {
   }
 }
 
-export async function fetchGeminiWithFallback(primaryUrl, fallbackUrl, options, fetchImpl = fetch) {
-  const primaryResponse = await fetchGeminiWithRetry(primaryUrl, options, fetchImpl);
-  if (primaryResponse.status !== 503 || primaryUrl.href === fallbackUrl.href) {
-    return { response: primaryResponse, requestUrl: primaryUrl, fallbackUsed: false };
+export async function fetchGeminiWithFallback(urls, options, fetchImpl = fetch) {
+  for (let index = 0; index < urls.length; index += 1) {
+    const response = await fetchGeminiWithRetry(urls[index], options, fetchImpl);
+    if (response.status !== 503 || index === urls.length - 1) {
+      return { response, requestUrl: urls[index], fallbackUsed: index > 0 };
+    }
+    await response.body?.cancel();
   }
-
-  await primaryResponse.body?.cancel();
-  return {
-    response: await fetchGeminiWithRetry(fallbackUrl, options, fetchImpl),
-    requestUrl: fallbackUrl,
-    fallbackUsed: true
-  };
 }
