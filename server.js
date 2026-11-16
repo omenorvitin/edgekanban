@@ -1008,7 +1008,11 @@ async function callGemini(instructions, messages, signal) {
       generationConfig: { maxOutputTokens: 700, temperature: 0.3 }
     })
   });
-  if (!result.ok) throw new Error(`Gemini respondeu com status ${result.status}`);
+  if (!result.ok) {
+    const errorBody = await result.text();
+    const requestUrl = `${url.origin}${url.pathname}?key=[redacted]`;
+    throw new Error(`Gemini respondeu com status ${result.status} em ${requestUrl} (modelo ${AI_MODEL}): ${errorBody}`);
+  }
   const data = await result.json();
   const answer = data.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('').trim();
   if (!answer) throw new Error('Gemini retornou uma resposta vazia ou bloqueada.');
