@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { fetchGeminiWithRetry } from '../gemini-retry.js';
+import { fetchGeminiWithFallback, fetchGeminiWithRetry } from '../gemini-retry.js';
 
 test('retries Gemini overload and returns a later successful response', async () => {
   let calls = 0;
@@ -37,4 +37,23 @@ test('limits overload requests to three attempts', async () => {
 
   assert.equal(calls, 3);
   assert.equal(response.status, 503);
+});
+
+test('uses the fallback model after repeated primary overloads', async () => {
+  let calls = 0;
+  const primaryUrl = new URL('https://example.test/models/gemini-3.8-flash:generateContent');
+  const fallbackUrl = new URL('https://example.test/models/gemini-3.5-flash-lite:generateContent');
+  const result = await fetchGeminiWithFallback(primaryUrl, fallbackUrl, {
+    signal: new AbortController().signal
+  }, async url => {
+    calls += 1;
+    return url === primaryUrl
+      ? new Response('busy', { status: 503, headers: { 'retry-after': '0' } })
+      : new Response('ok', { status: 200 });
+  });
+
+  assert.equal(calls, 4);
+  assert.equal(result.response.status, 200);
+  assert.equal(result.requestUrl, fallbackUrl);
+  assert.equal(result.fallbackUsed, true);
 });

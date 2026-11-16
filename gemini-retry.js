@@ -38,3 +38,17 @@ export async function fetchGeminiWithRetry(url, options, fetchImpl = fetch) {
     await waitForRetry(retryDelay(response, attempt), options.signal);
   }
 }
+
+export async function fetchGeminiWithFallback(primaryUrl, fallbackUrl, options, fetchImpl = fetch) {
+  const primaryResponse = await fetchGeminiWithRetry(primaryUrl, options, fetchImpl);
+  if (primaryResponse.status !== 503 || primaryUrl.href === fallbackUrl.href) {
+    return { response: primaryResponse, requestUrl: primaryUrl, fallbackUsed: false };
+  }
+
+  await primaryResponse.body?.cancel();
+  return {
+    response: await fetchGeminiWithRetry(fallbackUrl, options, fetchImpl),
+    requestUrl: fallbackUrl,
+    fallbackUsed: true
+  };
+}

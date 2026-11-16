@@ -3,13 +3,14 @@ import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { get, initializeDatabase, query, run } from './database.js';
-import { fetchGeminiWithRetry } from './gemini-retry.js';
+import { fetchGeminiWithFallback } from './gemini-retry.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
 const AI_MODEL = AI_PROVIDER === 'openai' ? (process.env.AI_MODEL || 'gpt-4o-mini') : 'gemini-3.8-flash';
+const GEMINI_FALLBACK_MODEL = 'gemini-3.5-flash-lite';
 const AI_API_KEY = process.env.AI_API_KEY?.trim() || '';
 const MAX_MESSAGES = 10;
 const DEFAULT_COLUMNS = [
@@ -996,7 +997,9 @@ async function askAI(messages, tasks, boardName) {
 async function callGemini(instructions, messages, signal) {
   const url = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent`);
   url.searchParams.set('key', AI_API_KEY);
-  const result = await fetchGeminiWithRetry(url, {
+  const fallbackUrl = new URL(url);
+  fallbackUrl.pathname = `/v1beta/models/${GEMINI_FALLBACK_MODEL}:generateContent`;
+  const { response: result, requestUrl, fallbackUsed } = await fetchGeminiWithFallback(url, fallbackUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     signal,
@@ -1009,10 +1012,14 @@ async function callGemini(instructions, messages, signal) {
       generationConfig: { maxOutputTokens: 700, temperature: 0.3 }
     })
   });
+  if (fallbackUsed) {
+    console.warn(`Gemini ${AI_MODEL} permaneceu sobrecarregado; usando ${GEMINI_FALLBACK_MODEL}.`);
+  }
   if (!result.ok) {
     const errorBody = await result.text();
-    const requestUrl = `${url.origin}${url.pathname}?key=[redacted]`;
-    throw new Error(`Gemini respondeu com status ${result.status} em ${requestUrl} (modelo ${AI_MODEL}): ${errorBody}`);
+    const safeRequestUrl = `${requestUrl.origin}${requestUrl.pathname}?key=[redacted]`;
+    const model = fallbackUsed ? GEMINI_FALLBACK_MODEL : AI_MODEL;
+    throw new Error(`Gemini respondeu com status ${result.status} em ${safeRequestUrl} (modelo ${model}): ${errorBody}`);
   }
   const data = await result.json();
   const answer = data.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('').trim();
