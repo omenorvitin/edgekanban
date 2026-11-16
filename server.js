@@ -4,15 +4,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { get, initializeDatabase, query, run } from './database.js';
 import { fetchGeminiWithFallback } from './gemini-retry.js';
+import { createGeminiModelLoader } from './gemini-models.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
-const AI_MODEL = AI_PROVIDER === 'openai' ? (process.env.AI_MODEL || 'gpt-4o-mini') : 'gemini-3.8-flash';
-const GEMINI_FALLBACK_MODEL = 'gemini-3.5-flash-lite';
+const OPENAI_MODEL = process.env.AI_MODEL || 'gpt-4o-mini';
 const AI_API_KEY = process.env.AI_API_KEY?.trim() || '';
 const MAX_MESSAGES = 10;
+const getGeminiModels = createGeminiModelLoader(AI_API_KEY);
 const DEFAULT_COLUMNS = [
   { id: 'todo', name: 'A fazer' },
   { id: 'doing', name: 'Em andamento' },
@@ -995,10 +996,13 @@ async function askAI(messages, tasks, boardName) {
 }
 
 async function callGemini(instructions, messages, signal) {
-  const url = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent`);
+  const models = await getGeminiModels();
+  const primaryModel = models[0];
+  const fallbackModel = models[1] || primaryModel;
+  const url = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(primaryModel)}:generateContent`);
   url.searchParams.set('key', AI_API_KEY);
   const fallbackUrl = new URL(url);
-  fallbackUrl.pathname = `/v1beta/models/${GEMINI_FALLBACK_MODEL}:generateContent`;
+  fallbackUrl.pathname = `/v1beta/models/${encodeURIComponent(fallbackModel)}:generateContent`;
   const { response: result, requestUrl, fallbackUsed } = await fetchGeminiWithFallback(url, fallbackUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1013,12 +1017,12 @@ async function callGemini(instructions, messages, signal) {
     })
   });
   if (fallbackUsed) {
-    console.warn(`Gemini ${AI_MODEL} permaneceu sobrecarregado; usando ${GEMINI_FALLBACK_MODEL}.`);
+    console.warn(`Gemini ${primaryModel} permaneceu sobrecarregado; usando ${fallbackModel}.`);
   }
   if (!result.ok) {
     const errorBody = await result.text();
     const safeRequestUrl = `${requestUrl.origin}${requestUrl.pathname}?key=[redacted]`;
-    const model = fallbackUsed ? GEMINI_FALLBACK_MODEL : AI_MODEL;
+    const model = fallbackUsed ? fallbackModel : primaryModel;
     throw new Error(`Gemini respondeu com status ${result.status} em ${safeRequestUrl} (modelo ${model}): ${errorBody}`);
   }
   const data = await result.json();
@@ -1036,7 +1040,7 @@ async function callOpenAI(instructions, messages, signal) {
     },
     signal,
     body: JSON.stringify({
-      model: AI_MODEL,
+      model: OPENAI_MODEL,
       messages: [
         { role: 'system', content: instructions },
         ...messages.map(message => ({ role: message.role, content: message.content }))

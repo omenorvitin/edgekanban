@@ -21,14 +21,14 @@ $env:AI_API_KEY = "sua-chave"
 npm start
 ```
 
-O Gemini usa `gemini-3.8-flash`, com novas tentativas automáticas para erros temporários de sobrecarga e fallback para `gemini-3.5-flash-lite` se a sobrecarga persistir. Também é possível usar `AI_PROVIDER=openai` e, opcionalmente, `AI_MODEL=gpt-4o-mini`. A interface nunca recebe a chave da IA. Sem uma chave válida, os recursos de IA informam que estão indisponíveis; quadros e tarefas continuam funcionando.
+O Gemini seleciona automaticamente o modelo Flash compatível mais recente disponível para a chave configurada, com cache em memória, novas tentativas para sobrecarga e fallback para outro modelo compatível. Também é possível usar `AI_PROVIDER=openai` e, opcionalmente, `AI_MODEL=gpt-4o-mini`. A interface nunca recebe a chave da IA. Sem uma chave válida, os recursos de IA informam que estão indisponíveis; quadros e tarefas continuam funcionando.
 
 ## Publicar no Render
 
 1. Publique o repositório como um **Web Service** com `npm install` no build e `npm start` no start.
 2. Crie um banco **Render PostgreSQL** e configure `DATABASE_URL` no Web Service com a URL interna fornecida pelo Render.
 3. Configure `APP_URL` com a URL pública do app, por exemplo `https://edgekanbann-ai.onrender.com`.
-4. Para os recursos de IA, cadastre `AI_PROVIDER` e `AI_API_KEY` nas variáveis do serviço. `AI_MODEL` é opcional somente para OpenAI; o Gemini usa `gemini-3.8-flash`.
+4. Para os recursos de IA, cadastre `AI_PROVIDER` e `AI_API_KEY` nas variáveis do serviço. `AI_MODEL` é opcional somente para OpenAI; o Gemini descobre o modelo compatível automaticamente.
 5. Faça um deploy e confira `https://seu-dominio/healthz`.
 
 O app usa SQLite se `DATABASE_URL` não estiver definido. O disco do Web Service pode ser temporário; para preservar os dados em produção, configure PostgreSQL no Render. O servidor cria as tabelas necessárias na inicialização.
