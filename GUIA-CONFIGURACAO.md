@@ -21,7 +21,7 @@ $env:AI_API_KEY = "sua-chave"
 npm start
 ```
 
-O Gemini usa `gemini-3.8-flash`. Também é possível usar `AI_PROVIDER=openai` e, opcionalmente, `AI_MODEL=gpt-4o-mini`. A interface nunca recebe a chave da IA. Sem uma chave válida, os recursos de IA informam que estão indisponíveis; quadros e tarefas continuam funcionando.
+O Gemini usa `gemini-3.8-flash`, com novas tentativas automáticas para erros temporários de sobrecarga. Também é possível usar `AI_PROVIDER=openai` e, opcionalmente, `AI_MODEL=gpt-4o-mini`. A interface nunca recebe a chave da IA. Sem uma chave válida, os recursos de IA informam que estão indisponíveis; quadros e tarefas continuam funcionando.
 
 ## Publicar no Render
 

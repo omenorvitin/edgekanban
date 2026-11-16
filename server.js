@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { get, initializeDatabase, query, run } from './database.js';
+import { fetchGeminiWithRetry } from './gemini-retry.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -995,7 +996,7 @@ async function askAI(messages, tasks, boardName) {
 async function callGemini(instructions, messages, signal) {
   const url = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent`);
   url.searchParams.set('key', AI_API_KEY);
-  const result = await fetch(url, {
+  const result = await fetchGeminiWithRetry(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     signal,
