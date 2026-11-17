@@ -923,6 +923,71 @@ app.post('/api/ai/chat', asyncRoute(async (request, response) => {
   }
 }));
 
+app.post('/api/ai/task', asyncRoute(async (request, response) => {
+  if (!AI_API_KEY || !['gemini', 'openai'].includes(AI_PROVIDER)) {
+    throw httpError(503, 'A criação de tarefas por IA não está configurada no servidor.');
+  }
+  const boardId = request.body?.boardId;
+  const access = await requireBoard(request, response, boardId, true);
+  if (!access) return;
+  const prompt = ensureText(request.body?.prompt, 'Descrição da tarefa', 1000);
+  const board = await getBoardData(access.id);
+  try {
+    const answer = await askAI([
+      {
+        role: 'user',
+        content:
+          `Crie os dados de uma única tarefa para este pedido: "${prompt}". ` +
+          `Membros disponíveis: ${JSON.stringify(board.members.map(member => ({ id: member.id, email: member.email })))}. ` +
+          `Labels disponíveis: ${JSON.stringify(board.labels.map(label => label.name))}. ` +
+          'Responda somente JSON válido no formato ' +
+          '{"title":"...","description":"...","priority":"low|medium|high","dueDate":"AAAA-MM-DD ou null",' +
+          '"assigneeEmail":"email do membro ou null","labels":["nome das labels"]}.'
+      }
+    ], [], board.name);
+    const jsonText = answer.match(/\{[\s\S]*\}/)?.[0];
+    let generated;
+    try {
+      generated = JSON.parse(jsonText);
+    } catch {
+      throw httpError(502, 'A IA retornou os dados da tarefa em formato inválido.');
+    }
+    if (!generated || typeof generated !== 'object' || Array.isArray(generated)) {
+      throw httpError(502, 'A IA retornou os dados da tarefa em formato inválido.');
+    }
+    const title = typeof generated.title === 'string' ? generated.title.trim() : '';
+    if (!title || title.length > 120) throw httpError(502, 'A IA não informou um título válido.');
+    const description = typeof generated.description === 'string' ? generated.description.trim() : '';
+    if (description.length > 2000) throw httpError(502, 'A IA retornou uma descrição muito longa.');
+    const priority = ['low', 'medium', 'high'].includes(generated.priority) ? generated.priority : 'medium';
+    const dueDate = validDate(generated.dueDate) ? generated.dueDate : null;
+    const assignee = typeof generated.assigneeEmail === 'string'
+      ? board.members.find(member => member.email === generated.assigneeEmail)
+      : null;
+    const labelNames = Array.isArray(generated.labels)
+      ? [...new Set(generated.labels.filter(name => typeof name === 'string'))]
+        .filter(name => board.labels.some(label => label.name.toLowerCase() === name.toLowerCase()))
+        .map(name => board.labels.find(label => label.name.toLowerCase() === name.toLowerCase()).name)
+        .slice(0, 10)
+      : [];
+
+    response.json({
+      task: {
+        title,
+        description,
+        priority,
+        dueDate,
+        assigneeId: assignee?.id || null,
+        labels: labelNames
+      }
+    });
+  } catch (error) {
+    if (error.status) throw error;
+    console.error('Falha ao criar tarefa por IA:', error.message);
+    throw httpError(502, 'A IA não respondeu. Confira a chave e o provedor configurados no servidor.');
+  }
+}));
+
 app.post('/api/ai/checklist', asyncRoute(async (request, response) => {
   if (!AI_API_KEY || !['gemini', 'openai'].includes(AI_PROVIDER)) {
     throw httpError(503, 'A geração de checklist por IA não está configurada no servidor.');
@@ -986,7 +1051,7 @@ async function askAI(messages, tasks, boardName) {
   ].join('\n');
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  const timeout = setTimeout(() => controller.abort(), 60000);
   try {
     return AI_PROVIDER === 'openai'
       ? await callOpenAI(instructions, messages, controller.signal)

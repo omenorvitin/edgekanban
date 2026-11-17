@@ -397,6 +397,7 @@ function renderLabelChoices(root, selected = [], disabled = false) {
 $('#openModal').addEventListener('click', () => {
   if (!currentBoard || currentBoard.role === 'VIEWER') return;
   $('#taskForm').reset();
+  setMessage($('#taskAiStatus'), '');
   populateAssigneeSelect($('#newAssignee'), '', false);
   renderLabelChoices($('#newLabels'));
   $('#modal').showModal();
@@ -405,6 +406,40 @@ $('#openModal').addEventListener('click', () => {
 $('#cancelBtn').addEventListener('click', () => $('#modal').close());
 $('#modal').addEventListener('click', event => {
   if (event.target === $('#modal')) $('#modal').close();
+});
+$('#generateTaskAi').addEventListener('click', async () => {
+  setMessage($('#taskAiStatus'), '');
+  const prompt = $('#descInput').value.trim() || $('#titleInput').value.trim();
+  if (!prompt) {
+    setMessage($('#taskAiStatus'), 'Descreva a tarefa antes de usar a IA.', true);
+    $('#descInput').focus();
+    return;
+  }
+  const button = $('#generateTaskAi');
+  button.disabled = true;
+  button.textContent = 'Gerando…';
+  try {
+    const result = await api('/api/ai/task', {
+      method: 'POST',
+      body: { boardId: currentBoard.id, prompt }
+    });
+    $('#titleInput').value = result.task.title;
+    $('#descInput').value = result.task.description;
+    $('#newPriority').value = result.task.priority;
+    $('#newDueDate').value = result.task.dueDate || '';
+    populateAssigneeSelect(
+      $('#newAssignee'),
+      result.task.assigneeId || '',
+      false
+    );
+    renderLabelChoices($('#newLabels'), result.task.labels);
+    setMessage($('#taskAiStatus'), 'Sugestão preenchida. Revise os campos e clique em “Adicionar tarefa”.');
+  } catch (error) {
+    setMessage($('#taskAiStatus'), error.message, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Criar com IA';
+  }
 });
 $('#taskForm').addEventListener('submit', async event => {
   event.preventDefault();

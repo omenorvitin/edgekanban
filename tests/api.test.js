@@ -95,6 +95,10 @@ test('collaboration, server-side roles, task details, Scrum and WIP limits', asy
     boardId,
     messages: [{ role: 'user', content: 'O que falta fazer?' }]
   })).status, 503);
+  assert.equal((await request('/api/ai/task', owner.token, 'POST', {
+    boardId,
+    prompt: 'Criar tarefa para revisar o login'
+  })).status, 503);
 
   const inviteViewer = await request(`/api/boards/${boardId}/invitations`, owner.token, 'POST', {
     email: 'viewer@example.com',

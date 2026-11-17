@@ -13,7 +13,7 @@ npm start
 
 Abra `http://localhost:3000` e crie uma conta com senha de pelo menos 8 caracteres. O SQLite é criado automaticamente em `data/edgekanban.sqlite`; essa pasta é ignorada pelo Git.
 
-Para habilitar o chat e a criação de checklist por IA, configure a chave somente no servidor:
+Para habilitar o chat, a criação de tarefas e a criação de checklist por IA, configure a chave somente no servidor:
 
 ```powershell
 $env:AI_PROVIDER = "gemini"
@@ -47,7 +47,7 @@ O app usa SQLite se `DATABASE_URL` não estiver definido. O disco do Web Service
 - Kanban com colunas personalizáveis, limite WIP validado pelo servidor, prioridade, labels e histórico.
 - Página de tarefa com prazo, responsável do quadro, comentários com autor/data, checklist, story points, sprint, critérios de aceite e Definition of Done.
 - Backlog e sprints Scrum; tarefas podem ser movidas entre backlog e sprints.
-- Chat de IA que consulta apenas tarefas do quadro autorizado e geração de checklist por IA. As chaves e chamadas aos provedores ficam no backend.
+- Chat de IA que consulta apenas tarefas do quadro autorizado, criação de tarefas pelo modal e geração de checklist por IA. As chaves e chamadas aos provedores ficam no backend.
 - Tarefas com “Bug” no título ou descrição recebem automaticamente a label Bug e prioridade alta.
 
 ## Verificação rápida
@@ -57,4 +57,4 @@ O app usa SQLite se `DATABASE_URL` não estiver definido. O disco do Web Service
 3. Confirme que ambos veem as alterações e que o dono consegue trocar o segundo usuário para leitor.
 4. Como leitor, tente criar, mover ou editar uma tarefa: a interface deve bloquear a edição e o servidor deve responder com `403`.
 5. Abra uma tarefa em nova aba, adicione comentário, responsável, prazo e checklist; confirme que as mudanças aparecem no quadro e na página.
-6. Configure a IA no Render e teste uma pergunta sobre tarefas e a geração de checklist.
+6. Configure a IA no Render e teste uma pergunta sobre tarefas, a criação de uma tarefa pelo modal e a geração de checklist.
