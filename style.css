@@ -36,7 +36,7 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
-button, input, textarea { font: inherit; }
+button, input, textarea, select { font: inherit; }
 button { color: inherit; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 
@@ -85,7 +85,7 @@ button { color: inherit; cursor: pointer; }
 .login-form { display: grid; gap: 16px; }
 .field { display: grid; gap: 7px; }
 label { display: grid; gap: 7px; font-size: .84rem; font-weight: 600; }
-input, textarea {
+input, textarea, select {
   width: 100%;
   padding: 11px 13px;
   border: 1px solid var(--line);
@@ -99,6 +99,11 @@ input, textarea {
 input { min-height: 46px; }
 input::placeholder, textarea::placeholder { color: #71849b; }
 input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--aqua);
+  box-shadow: 0 0 0 3px rgba(24, 216, 230, .14);
+}
+select:focus {
   outline: none;
   border-color: var(--aqua);
   box-shadow: 0 0 0 3px rgba(24, 216, 230, .14);
@@ -385,6 +390,7 @@ dialog[open] { animation: appear .16s ease-out; }
 .optional { color: var(--muted); font-weight: 400; }
 textarea { min-height: 94px; resize: vertical; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 2px; }
+.ai-settings-actions { flex-wrap: wrap; }
 .btn-ghost { padding: 10px 15px; }
 
 @media (max-width: 860px) {

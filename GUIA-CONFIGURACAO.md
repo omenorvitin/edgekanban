@@ -13,25 +13,29 @@ npm start
 
 Abra `http://localhost:3000` e crie uma conta com senha de pelo menos 8 caracteres. O SQLite é criado automaticamente em `data/edgekanban.sqlite`; essa pasta é ignorada pelo Git.
 
-Para habilitar o chat, a criação de tarefas e a criação de checklist por IA, configure a chave somente no servidor:
+Para usar os recursos de IA, abra **Configurar IA** na barra superior após entrar. Cada conta pode escolher um provedor, modelo e chave. A chave é enviada ao backend, criptografada antes de ser persistida e nunca é devolvida à interface.
+
+Provedores disponíveis: OpenAI, Gemini, Anthropic Claude e API compatível com OpenAI. Para a opção compatível, informe também a URL base HTTPS e o identificador do modelo. Uma conta precisa configurar apenas o provedor que deseja usar. O botão **Testar conexão** valida chave, endpoint e modelo sem salvar a chave digitada; **Salvar configuração** persiste os dados da conta.
+
+Para desenvolvimento local, gere uma chave de criptografia uma única vez com `openssl rand -base64 32`. Guarde o resultado em segredo e reutilize exatamente o mesmo valor:
 
 ```powershell
-$env:AI_PROVIDER = "gemini"
-$env:AI_API_KEY = "sua-chave"
+$env:AI_SETTINGS_ENCRYPTION_KEY = "COLE_AQUI_O_VALOR_GERADO"
 npm start
 ```
 
-O Gemini seleciona automaticamente o modelo Flash compatível mais recente disponível para a chave configurada, com cache em memória, novas tentativas para sobrecarga e fallback para outro modelo compatível. Também é possível usar `AI_PROVIDER=openai` e, opcionalmente, `AI_MODEL=gpt-4o-mini`. A interface nunca recebe a chave da IA. Sem uma chave válida, os recursos de IA informam que estão indisponíveis; quadros e tarefas continuam funcionando.
+Também é possível continuar usando as variáveis legadas `AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL` e `AI_BASE_URL` como configuração global inicial. As configurações pessoais salvas têm precedência. Sem uma chave de IA, o Kanban e as tarefas continuam disponíveis.
 
 ## Publicar no Render
 
 1. Publique o repositório como um **Web Service** com `npm install` no build e `npm start` no start.
 2. Crie um banco **Render PostgreSQL** e configure `DATABASE_URL` no Web Service com a URL interna fornecida pelo Render.
-3. Configure `APP_URL` com a URL pública do app, por exemplo `https://edgekanbann-ai.onrender.com`.
-4. Para os recursos de IA, cadastre `AI_PROVIDER` e `AI_API_KEY` nas variáveis do serviço. `AI_MODEL` é opcional somente para OpenAI; o Gemini descobre o modelo compatível automaticamente.
-5. Faça um deploy e confira `https://seu-dominio/healthz`.
+3. Configure `APP_URL` com a URL pública do app, por exemplo `https://edgekanban.onrender.com`.
+4. No ambiente do Web Service, crie `AI_SETTINGS_ENCRYPTION_KEY` com uma chave aleatória de 32 bytes codificada em Base64. Gere-a uma única vez com `openssl rand -base64 32`; mantenha o mesmo valor em deploys futuros para descriptografar as chaves já salvas.
+5. Opcionalmente, cadastre as variáveis legadas `AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL` e `AI_BASE_URL` para oferecer uma configuração global inicial. Não coloque chaves no Git ou no frontend.
+6. Faça um deploy e confira `https://seu-dominio/healthz`.
 
-O app usa SQLite se `DATABASE_URL` não estiver definido. O disco do Web Service pode ser temporário; para preservar os dados em produção, configure PostgreSQL no Render. O servidor cria as tabelas necessárias na inicialização.
+O app usa SQLite se `DATABASE_URL` não estiver definido. O disco do Web Service pode ser temporário; para preservar contas, quadros e configurações criptografadas em produção, configure PostgreSQL no Render. O servidor cria as tabelas necessárias na inicialização.
 
 ## Contas, quadros e convites
 
@@ -47,7 +51,7 @@ O app usa SQLite se `DATABASE_URL` não estiver definido. O disco do Web Service
 - Kanban com colunas personalizáveis, limite WIP validado pelo servidor, prioridade, labels e histórico.
 - Página de tarefa com prazo, responsável do quadro, comentários com autor/data, checklist, story points, sprint, critérios de aceite e Definition of Done.
 - Backlog e sprints Scrum; tarefas podem ser movidas entre backlog e sprints.
-- Chat de IA que consulta apenas tarefas do quadro autorizado, criação de tarefas pelo modal e geração de checklist por IA. As chaves e chamadas aos provedores ficam no backend.
+- Chat, criação de tarefas e geração de checklist por OpenAI, Gemini, Claude ou uma API compatível. As chaves são criptografadas no banco e todas as chamadas aos provedores ficam no backend.
 - Tarefas com “Bug” no título ou descrição recebem automaticamente a label Bug e prioridade alta.
 
 ## Verificação rápida
@@ -57,4 +61,4 @@ O app usa SQLite se `DATABASE_URL` não estiver definido. O disco do Web Service
 3. Confirme que ambos veem as alterações e que o dono consegue trocar o segundo usuário para leitor.
 4. Como leitor, tente criar, mover ou editar uma tarefa: a interface deve bloquear a edição e o servidor deve responder com `403`.
 5. Abra uma tarefa em nova aba, adicione comentário, responsável, prazo e checklist; confirme que as mudanças aparecem no quadro e na página.
-6. Configure a IA no Render e teste uma pergunta sobre tarefas, a criação de uma tarefa pelo modal e a geração de checklist.
+6. Em **Configurar IA**, salve uma chave de teste em cada provedor disponível, teste a conexão, alterne o provedor e valide chat, criação de tarefa e checklist.

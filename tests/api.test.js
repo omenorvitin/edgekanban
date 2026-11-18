@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -51,7 +52,10 @@ before(async () => {
       PORT: String(port),
       DATABASE_URL: '',
       DATABASE_PATH: path.join(testDirectory, 'test.sqlite'),
-      AI_API_KEY: ''
+      AI_PROVIDER: 'openai',
+      AI_MODEL: 'gpt-test',
+      AI_API_KEY: 'legacy-test-secret',
+      AI_SETTINGS_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString('base64')
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -90,7 +94,17 @@ test('collaboration, server-side roles, task details, Scrum and WIP limits', asy
   const boardId = boardsResult.body.boards[0].id;
   const aiStatus = await request('/api/ai/status', owner.token);
   assert.equal(aiStatus.status, 200);
-  assert.equal(aiStatus.body.available, false);
+  assert.equal(aiStatus.body.available, true);
+  const personalSettings = await request('/api/ai/settings', owner.token);
+  assert.equal(personalSettings.body.providers.openai.keyConfigured, true);
+  const disabledAI = await request('/api/ai/settings', owner.token, 'PUT', {
+    provider: 'openai',
+    model: 'gpt-test',
+    apiKey: ''
+  });
+  assert.equal(disabledAI.status, 200);
+  assert.equal(disabledAI.body.providers.openai.keyConfigured, false);
+  assert.equal((await request('/api/ai/status', owner.token)).body.available, false);
   assert.equal((await request('/api/ai/chat', owner.token, 'POST', {
     boardId,
     messages: [{ role: 'user', content: 'O que falta fazer?' }]
@@ -223,4 +237,75 @@ test('collaboration, server-side roles, task details, Scrum and WIP limits', asy
   })).status, 200);
   const reorderedBoard = (await request(`/api/boards/${boardId}`, owner.token)).body.board;
   assert.equal(reorderedBoard.columns[0].id, second.id);
+});
+
+test('stores provider settings per account and never returns plaintext API keys', async () => {
+  const owner = await register('ai-settings@example.com');
+  const key = 'provider-test-secret';
+  const saved = await request('/api/ai/settings', owner.token, 'PUT', {
+    provider: 'openai',
+    model: 'gpt-test',
+    apiKey: key
+  });
+  assert.equal(saved.status, 200);
+  assert.equal(saved.body.activeProvider, 'openai');
+  assert.equal(saved.body.providers.openai.keyConfigured, true);
+  assert.equal(JSON.stringify(saved.body).includes(key), false);
+
+  const database = new DatabaseSync(path.join(testDirectory, 'test.sqlite'));
+  const stored = database.prepare(
+    'SELECT provider_configs FROM user_ai_settings WHERE user_id = ?'
+  ).get(owner.user.id);
+  database.close();
+  assert.ok(stored);
+  assert.equal(stored.provider_configs.includes(key), false);
+
+  const secondProvider = await request('/api/ai/settings', owner.token, 'PUT', {
+    provider: 'anthropic',
+    model: 'claude-test',
+    apiKey: 'anthropic-test-secret'
+  });
+  assert.equal(secondProvider.status, 200);
+  assert.equal(secondProvider.body.activeProvider, 'anthropic');
+  assert.equal(secondProvider.body.providers.openai.keyConfigured, true);
+  assert.equal(secondProvider.body.providers.anthropic.keyConfigured, true);
+  assert.equal(JSON.stringify(secondProvider.body).includes('anthropic-test-secret'), false);
+
+  const removed = await request('/api/ai/settings', owner.token, 'PUT', {
+    provider: 'openai',
+    model: 'gpt-test',
+    apiKey: '',
+    clearApiKey: true
+  });
+  assert.equal(removed.status, 200);
+  assert.equal(removed.body.providers.openai.keyConfigured, false);
+  assert.equal(removed.body.providers.anthropic.keyConfigured, true);
+  assert.equal((await request('/api/ai/status', owner.token)).body.available, false);
+});
+
+test('rejects insecure compatible-provider endpoints and missing test credentials', async () => {
+  const owner = await register('ai-provider-validation@example.com');
+  const invalidEndpoint = await request('/api/ai/settings', owner.token, 'PUT', {
+    provider: 'openai-compatible',
+    model: 'test-model',
+    apiKey: 'test-secret',
+    baseUrl: 'http://127.0.0.1/v1'
+  });
+  assert.equal(invalidEndpoint.status, 400);
+
+  const missingKeyTest = await request('/api/ai/test', owner.token, 'POST', {
+    provider: 'anthropic',
+    model: 'claude-test',
+    apiKey: ''
+  });
+  assert.equal(missingKeyTest.status, 400);
+  assert.match(missingKeyTest.body.error, /chave de API/i);
+
+  const invalidKeyTest = await request('/api/ai/test', owner.token, 'POST', {
+    provider: 'anthropic',
+    model: 'claude-test',
+    apiKey: 123
+  });
+  assert.equal(invalidKeyTest.status, 400);
+  assert.match(invalidKeyTest.body.error, /chave de API/i);
 });

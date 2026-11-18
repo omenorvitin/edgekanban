@@ -113,6 +113,12 @@ const schema = [
     details TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS user_ai_settings (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    active_provider TEXT NOT NULL,
+    provider_configs TEXT NOT NULL DEFAULT '{}',
+    updated_at TEXT NOT NULL
+  )`,
   'CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions(user_id)',
   'CREATE INDEX IF NOT EXISTS board_members_user_idx ON board_members(user_id)',
   'CREATE INDEX IF NOT EXISTS tasks_board_idx ON tasks(board_id)',

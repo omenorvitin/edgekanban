@@ -45,6 +45,7 @@
     </div>
     <div class="account-actions">
       <span class="account-email" id="accountEmail"></span>
+      <button class="btn-ghost" id="openAiSettings" type="button">Configurar IA</button>
       <button class="btn-logout" id="logoutBtn" type="button">Sair</button>
     </div>
   </header>
@@ -194,6 +195,41 @@
       <button class="btn-primary" id="chatSubmit" type="submit">Enviar</button>
     </form>
   </aside>
+
+  <dialog id="aiSettingsDialog" aria-labelledby="aiSettingsTitle">
+    <form class="modal-body" id="aiSettingsForm">
+      <div>
+        <p class="eyebrow">PREFERÊNCIAS DA CONTA</p>
+        <h2 id="aiSettingsTitle">Provedor de IA</h2>
+      </div>
+      <label for="aiProvider">Provedor
+        <select id="aiProvider" required>
+          <option value="openai">OpenAI (ChatGPT)</option>
+          <option value="gemini">Google Gemini</option>
+          <option value="anthropic">Anthropic Claude</option>
+          <option value="openai-compatible">Outra API compatível com OpenAI</option>
+        </select>
+      </label>
+      <label for="aiModel">Modelo
+        <input id="aiModel" maxlength="160" required placeholder="Identificador do modelo">
+      </label>
+      <label id="aiBaseUrlField" for="aiBaseUrl" hidden>URL base do provedor
+        <input id="aiBaseUrl" type="url" maxlength="500" placeholder="https://api.provedor.com/v1">
+      </label>
+      <label for="aiApiKey">Chave de API
+        <input id="aiApiKey" type="password" maxlength="4096" autocomplete="new-password" placeholder="Cole uma chave para salvar ou testar">
+      </label>
+      <p class="form-message" id="aiKeyStatus" role="status">A chave salva não é exibida. Deixe em branco para mantê-la.</p>
+      <p class="form-message" id="aiSettingsMessage" role="status" aria-live="polite"></p>
+      <p class="optional">A chave é enviada apenas ao backend e armazenada criptografada. Cada conta mantém suas próprias configurações.</p>
+      <div class="modal-actions ai-settings-actions">
+        <button type="button" class="btn-ghost" id="testAiConnection">Testar conexão</button>
+        <button type="button" class="btn-ghost" id="clearAiKey">Remover chave</button>
+        <button type="button" class="btn-ghost" data-close-dialog="aiSettingsDialog">Fechar</button>
+        <button type="submit" class="btn-primary">Salvar configuração</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="modal" aria-labelledby="modalTitle">
     <form class="modal-body" id="taskForm">

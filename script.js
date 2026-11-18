@@ -17,6 +17,7 @@ let currentBoard = null;
 let chatHistory = [];
 let draggedTaskId = null;
 let aiStatusChecked = false;
+let aiSettingsCache = null;
 let invitationToken = new URLSearchParams(location.search).get('invite') ||
   location.pathname.match(/^\/invite\/([^/]+)\/?$/)?.[1] || '';
 let refreshTimer = null;
@@ -1057,6 +1058,107 @@ function renderActivityList(list, entries) {
 }
 
 const chatPanel = $('#projectChat');
+function updateAISettingsFields() {
+  if (!aiSettingsCache) return;
+  const provider = $('#aiProvider').value;
+  const config = aiSettingsCache.providers[provider] || {};
+  $('#aiModel').value = config.model || '';
+  $('#aiBaseUrl').value = config.baseUrl || '';
+  $('#aiBaseUrlField').hidden = provider !== 'openai-compatible';
+  $('#aiApiKey').value = '';
+  $('#aiKeyStatus').textContent = config.keyConfigured
+    ? 'Uma chave está configurada. Deixe o campo vazio para mantê-la.'
+    : 'Nenhuma chave configurada para este provedor.';
+  $('#clearAiKey').disabled = !config.keyConfigured;
+}
+
+async function openAISettings() {
+  $('#aiSettingsDialog').showModal();
+  setMessage($('#aiSettingsMessage'), '');
+  $('#aiKeyStatus').textContent = 'Carregando configurações…';
+  try {
+    aiSettingsCache = await api('/api/ai/settings');
+    $('#aiProvider').value = aiSettingsCache.activeProvider;
+    updateAISettingsFields();
+  } catch (error) {
+    setMessage($('#aiSettingsMessage'), error.message, true);
+    $('#aiKeyStatus').textContent = '';
+  }
+}
+
+function currentAISettingsForm() {
+  return {
+    provider: $('#aiProvider').value,
+    model: $('#aiModel').value.trim(),
+    apiKey: $('#aiApiKey').value,
+    baseUrl: $('#aiBaseUrl').value.trim()
+  };
+}
+
+$('#openAiSettings').addEventListener('click', openAISettings);
+$('#aiProvider').addEventListener('change', updateAISettingsFields);
+$('#aiSettingsForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!event.currentTarget.reportValidity()) return;
+  const button = $('button[type="submit"]', event.currentTarget);
+  button.disabled = true;
+  setMessage($('#aiSettingsMessage'), 'Salvando configuração…');
+  try {
+    aiSettingsCache = await api('/api/ai/settings', {
+      method: 'PUT',
+      body: currentAISettingsForm()
+    });
+    $('#aiProvider').value = aiSettingsCache.activeProvider;
+    updateAISettingsFields();
+    $('#aiApiKey').value = '';
+    aiStatusChecked = false;
+    setMessage($('#aiSettingsMessage'), 'Configuração salva. A chave não será exibida novamente.');
+  } catch (error) {
+    setMessage($('#aiSettingsMessage'), error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('#testAiConnection').addEventListener('click', async () => {
+  const form = $('#aiSettingsForm');
+  if (!form.reportValidity()) return;
+  const button = $('#testAiConnection');
+  button.disabled = true;
+  setMessage($('#aiSettingsMessage'), 'Testando conexão…');
+  try {
+    const result = await api('/api/ai/test', {
+      method: 'POST',
+      body: currentAISettingsForm()
+    });
+    setMessage($('#aiSettingsMessage'), `Conexão com ${result.provider} testada com sucesso (${result.model}).`);
+  } catch (error) {
+    setMessage($('#aiSettingsMessage'), error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('#clearAiKey').addEventListener('click', async () => {
+  if (!aiSettingsCache) return;
+  const button = $('#clearAiKey');
+  button.disabled = true;
+  setMessage($('#aiSettingsMessage'), 'Removendo chave…');
+  try {
+    aiSettingsCache = await api('/api/ai/settings', {
+      method: 'PUT',
+      body: { ...currentAISettingsForm(), apiKey: '', clearApiKey: true }
+    });
+    updateAISettingsFields();
+    aiStatusChecked = false;
+    setMessage($('#aiSettingsMessage'), 'Chave removida.');
+  } catch (error) {
+    setMessage($('#aiSettingsMessage'), error.message, true);
+  } finally {
+    updateAISettingsFields();
+  }
+});
+
 async function openChat() {
   chatPanel.hidden = false;
   $('#openChat').setAttribute('aria-expanded', 'true');
@@ -1066,7 +1168,7 @@ async function openChat() {
   try {
     const status = await api('/api/ai/status');
     if (!status.available) {
-      appendChatMessage('IA indisponível: configure AI_API_KEY no servidor para habilitar Gemini ou OpenAI.', 'assistant', true);
+      appendChatMessage(status.error || 'Configure uma chave de API nas configurações de IA.', 'assistant', true);
     }
   } catch (error) {
     appendChatMessage(error.message, 'assistant', true);
